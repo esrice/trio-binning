@@ -89,11 +89,45 @@ seq_entry_t FastaParser::next_sequence() {
     return entry;
 }
 
+class FastqParser : public SeqParser {
+    public:
+        FastqParser(const char* infile_path) : SeqParser(infile_path) {};
+        seq_entry_t next_sequence();
+    private:
+        std::string qual;
+};
+
+seq_entry_t FastqParser::next_sequence() {
+    seq_entry_t entry;
+
+    header = line.substr(1, line.length() - 1);
+    id = get_id(header);
+
+    std::getline(infile, read); // get the read sequence
+    std::getline(infile, line); // get the quality header line
+    std::getline(infile, qual); // get the quality string
+
+    std::getline(infile, line); // advance to the next entry
+    if (infile.eof()) {
+        done = true;
+    }
+
+    entry.id = id;
+    entry.read = read;
+    return entry;
+}
+
 int main() {
     seq_entry_t entry;
-    FastaParser parser("test.fa");
-    while (!parser.done) {
-        entry = parser.next_sequence();
+    FastaParser faparser("test.fa");
+    while (!faparser.done) {
+        entry = faparser.next_sequence();
+        std::cout << entry.id << '\t' << entry.read << '\n';
+    }
+
+    FastqParser fqparser("test.fq");
+    while (!fqparser.done) {
+        entry = fqparser.next_sequence();
         std::cout << entry.id << '\t' << entry.read << '\n';
     }
 }
