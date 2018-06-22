@@ -1,10 +1,8 @@
 #include "trio_binning.h"
-
 /**
  * This file contains functions for reading sequence files
  * like fasta and fastq. See main() for usage examples.
  */
-
 
 /*
  * Given a sequence header string, return the sequence id,
