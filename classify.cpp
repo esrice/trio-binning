@@ -1,9 +1,6 @@
 #include <set>
-#include <string>
-#include <iostream>
 #include <stdint.h>
-#include <fstream>
-#include <stdlib.h>
+#include "trio_binning.h"
 
 struct haplotype_counts_t {
     int hapA_count, hapB_count;
@@ -144,4 +141,17 @@ int main(int argc, char** argv)
     counts = count_kmers_in_read("TACAGCGGAGCGCCCAAATTT",
             hapA_kmers, hapB_kmers, k);
     std::cout << counts.hapA_count << ' ' << counts.hapB_count << '\n';
+
+    seq_entry_t entry;
+    FastaParser faparser("test.fa");
+    while (!faparser.done) {
+        entry = faparser.next_sequence();
+        std::cout << entry.id << '\t' << entry.read << '\n';
+    }
+
+    FastqParser fqparser("test.fq");
+    while (!fqparser.done) {
+        entry = fqparser.next_sequence();
+        std::cout << entry.id << '\t' << entry.read << '\n';
+    }
 }

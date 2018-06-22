@@ -1,19 +1,10 @@
-#include <string>
-#include <stdlib.h>
-#include <fstream>
-#include <iostream>
-#include <iterator>
+#include "trio_binning.h"
 
 /**
  * This file contains functions for reading sequence files
  * like fasta and fastq. See main() for usage examples.
  */
 
-/**
- * Struct for a single entry of a sequence file, containing
- * an entry id and a read.
- */
-struct seq_entry_t { std::string id, read; };
 
 /*
  * Given a sequence header string, return the sequence id,
@@ -27,22 +18,6 @@ std::string get_id(std::string header) {
         return header.substr(0, first_space);
     }
 }
-
-/*
- * Abstract class for parsing a sequence file. Contains
- * code for opening and reading the first line of a file,
- * but the next_sequence() method must be implemented by
- * child class.
- */
-class SeqParser {
-    public:
-        bool done; // have we reached EOF?
-        virtual seq_entry_t next_sequence() = 0;
-    protected:
-        std::ifstream infile;
-        std::string line, header, id, read;
-        SeqParser (const char*);
-};
 
 /*
  * Create a new SeqParser by opening the given file,
@@ -59,15 +34,6 @@ SeqParser::SeqParser (const char* infile_path) : done(false) {
         std::cerr << "File " << infile_path << " is empty.\n";
     }
 }
-
-/*
- * Implementation of SeqParser for parsing fasta files.
- */
-class FastaParser : public SeqParser {
-    public:
-        FastaParser(const char* infile_path) : SeqParser(infile_path) {};
-        seq_entry_t next_sequence();
-};
 
 seq_entry_t FastaParser::next_sequence() {
     seq_entry_t entry;
@@ -89,14 +55,6 @@ seq_entry_t FastaParser::next_sequence() {
     return entry;
 }
 
-class FastqParser : public SeqParser {
-    public:
-        FastqParser(const char* infile_path) : SeqParser(infile_path) {};
-        seq_entry_t next_sequence();
-    private:
-        std::string qual;
-};
-
 seq_entry_t FastqParser::next_sequence() {
     seq_entry_t entry;
 
@@ -115,19 +73,4 @@ seq_entry_t FastqParser::next_sequence() {
     entry.id = id;
     entry.read = read;
     return entry;
-}
-
-int main() {
-    seq_entry_t entry;
-    FastaParser faparser("test.fa");
-    while (!faparser.done) {
-        entry = faparser.next_sequence();
-        std::cout << entry.id << '\t' << entry.read << '\n';
-    }
-
-    FastqParser fqparser("test.fq");
-    while (!fqparser.done) {
-        entry = fqparser.next_sequence();
-        std::cout << entry.id << '\t' << entry.read << '\n';
-    }
 }
