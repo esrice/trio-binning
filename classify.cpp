@@ -54,6 +54,33 @@ std::string bits_to_kmer(uint64_t bit_repr, size_t k)
     return kmer;
 }
 
+std::string reverse_complement(std::string sequence) {
+    std::string revcomp_seq  (sequence.length(), '*');
+    int i;
+    char base;
+
+    for (i = 0; i < sequence.length(); i++) {
+        switch (sequence[i]) {
+            case 'A': base = 'T'; break;
+            case 'C': base = 'G'; break;
+            case 'G': base = 'C'; break;
+            case 'T': base = 'A'; break;
+        }
+        revcomp_seq[sequence.length() - 1 - i] = base;
+    }
+
+    return revcomp_seq;
+}
+
+std::string get_canonical_representation(std::string sequence) {
+    std::string revcomp_seq = reverse_complement(sequence);
+    if (sequence.compare(revcomp_seq) < 0) {
+        return sequence;
+    } else {
+        return revcomp_seq;
+    }
+}
+
 size_t get_kmer_size(char* file_path)
 {
     std::ifstream infile;
@@ -81,6 +108,7 @@ haplotype_counts_t count_kmers_in_read(std::string read,
 
     for (i=0; i < read.length()-k+1; i++) {
         kmer = read.substr(i, k);
+        kmer = get_canonical_representation(kmer);
         if (hapA_kmers.find(kmer_to_bits(kmer)) != hapA_kmers.end()) {
             counts.hapA_count++;
         }
@@ -105,8 +133,6 @@ std::set<uint64_t> read_kmers_into_set(char* file_path)
         exit(1);
     }
 
-    // TODO figure out how to use the insert function that gives a "hint" to
-    // optimize stuff, however that works
     while (infile >> kmer) {
         kmers.insert(kmer_to_bits(kmer));
     }
@@ -169,12 +195,5 @@ int main(int argc, char** argv)
         }
         printf("%s\t%c\t%.2f\t%.2f\n", entry.id.c_str(), best_haplotype,
                 hapA_score, hapB_score);
-    }
-
-    // this is test code
-    FastaParser faparser("test.fa");
-    while (!faparser.done) {
-        entry = faparser.next_sequence();
-        std::cout << entry.id << '\t' << entry.read << '\n';
     }
 }
