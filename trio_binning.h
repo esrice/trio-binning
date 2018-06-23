@@ -9,8 +9,18 @@
 /**
  * Struct for a single entry of a sequence file, containing
  * an entry id and a read.
- */
-struct seq_entry_t { std::string id, read; };
+ */ // TODO figure out how to do this with polymorphism instead of overloading
+class SeqEntry {
+    public:
+        std::string id, read, qual;
+        SeqEntry (): id(""), read(""), qual("") {};
+        SeqEntry (std::string id, std::string read):
+            id(id), read(read), qual("") {};
+        SeqEntry (std::string id, std::string read, std::string qual):
+            id(id), read(read), qual(qual) {};
+        friend std::ostream& operator<< (std::ostream& stream,
+                const SeqEntry& entry);
+};
 
 /*
  * Given a sequence header string, return the sequence id,
@@ -27,7 +37,7 @@ std::string get_id(std::string header);
 class SeqParser {
     public:
         bool done; // have we reached EOF?
-        virtual seq_entry_t next_sequence() = 0;
+        virtual SeqEntry next_sequence() = 0;
     protected:
         std::ifstream infile;
         std::string line, header, id, read;
@@ -40,7 +50,7 @@ class SeqParser {
 class FastaParser : public SeqParser {
     public:
         FastaParser(const char* infile_path) : SeqParser(infile_path) {};
-        seq_entry_t next_sequence();
+        SeqEntry next_sequence();
 };
 
 /*
@@ -49,7 +59,7 @@ class FastaParser : public SeqParser {
 class FastqParser : public SeqParser {
     public:
         FastqParser(const char* infile_path) : SeqParser(infile_path) {};
-        seq_entry_t next_sequence();
+        SeqEntry next_sequence();
     private:
         std::string qual;
 };

@@ -145,10 +145,23 @@ int main(int argc, char** argv)
 {
     std::set<uint64_t> hapA_kmers, hapB_kmers;
     std::set<uint64_t>::iterator it;
+    std::ofstream hapA_reads_out, hapB_reads_out, hapU_reads_out;
     unsigned int num_hapA_kmers, num_hapB_kmers, max_num_kmers;
     double scaling_factor_A, scaling_factor_B;
     float hapA_score, hapB_score;
     char best_haplotype;
+
+    // get arguments
+    if (argc < 7) {
+        std::cerr << "Not enough arguments.\n";
+        exit(1);
+    }
+    char* hapA_kmer_filepath = argv[1];
+    char* hapB_kmer_filepath = argv[2];
+    char* reads_inpath = argv[3];
+    char* hapA_reads_outpath = argv[4];
+    char* hapB_reads_outpath = argv[5];
+    char* hapU_reads_outpath = argv[6];
 
     size_t k = get_kmer_size(argv[1]);
     uint8_t *seq;
@@ -156,8 +169,8 @@ int main(int argc, char** argv)
     int i;
 
     // read k-kmers into sets
-    hapA_kmers = read_kmers_into_set(argv[1]);
-    hapB_kmers = read_kmers_into_set(argv[2]);
+    hapA_kmers = read_kmers_into_set(hapA_kmer_filepath);
+    hapB_kmers = read_kmers_into_set(hapB_kmer_filepath);
 
     // look at the sizes of the k-mer sets and use these to calculating scaling
     // factors. The original program divides read haplotype counts by the size
@@ -171,14 +184,17 @@ int main(int argc, char** argv)
     scaling_factor_A = (double) max_num_kmers / (double) num_hapA_kmers;
     scaling_factor_B = (double) max_num_kmers / (double) num_hapB_kmers;
 
+    // set up some output streams for haplotype reads
+    hapA_reads_out.open(hapA_reads_outpath, std::ofstream::out);
+    hapB_reads_out.open(hapB_reads_outpath, std::ofstream::out);
+    hapU_reads_out.open(hapU_reads_outpath, std::ofstream::out);
+
     // go through reads
     // TODO add gzip support and automatic fasta/fastq detection
-    FastqParser reads_parser(argv[3]);
-    seq_entry_t entry; // TODO convert this to a class
+    FastqParser reads_parser(reads_inpath);
+    SeqEntry entry;
     haplotype_counts_t counts;
 
-    // TODO actually output reads into files in addition to printing scores to
-    // stdout
     while (!reads_parser.done) {
         entry = reads_parser.next_sequence();
         counts = count_kmers_in_read(entry.read, hapA_kmers, hapB_kmers, k);
@@ -188,10 +204,13 @@ int main(int argc, char** argv)
 
         if (hapA_score > hapB_score) {
             best_haplotype = 'A';
+            hapA_reads_out << entry;
         } else if (hapB_score > hapA_score) {
             best_haplotype = 'B';
+            hapB_reads_out << entry;
         } else {
             best_haplotype = '-';
+            hapU_reads_out << entry;
         }
         printf("%s\t%c\t%.2f\t%.2f\n", entry.id.c_str(), best_haplotype,
                 hapA_score, hapB_score);

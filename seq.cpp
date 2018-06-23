@@ -17,6 +17,15 @@ std::string get_id(std::string header) {
     }
 }
 
+std::ostream& operator<< (std::ostream& stream, const SeqEntry& entry) {
+    if (entry.qual == "") {
+        stream << ">" << entry.id << "\n" << entry.read << "\n";
+    } else {
+        stream << "@" << entry.id << "\n" << entry.read << "\n+\n"
+            << entry.qual << "\n";
+    }
+}
+
 /*
  * Create a new SeqParser by opening the given file,
  * reading the first line, and making sure it's not
@@ -33,8 +42,8 @@ SeqParser::SeqParser (const char* infile_path) : done(false) {
     }
 }
 
-seq_entry_t FastaParser::next_sequence() {
-    seq_entry_t entry;
+SeqEntry FastaParser::next_sequence() {
+    SeqEntry entry;
 
     header = line.substr(1, line.length() - 1);
     id = get_id(header);
@@ -53,8 +62,8 @@ seq_entry_t FastaParser::next_sequence() {
     return entry;
 }
 
-seq_entry_t FastqParser::next_sequence() {
-    seq_entry_t entry;
+SeqEntry FastqParser::next_sequence() {
+    SeqEntry entry;
 
     header = line.substr(1, line.length() - 1);
     id = get_id(header);
@@ -70,5 +79,6 @@ seq_entry_t FastqParser::next_sequence() {
 
     entry.id = id;
     entry.read = read;
+    entry.qual = qual;
     return entry;
 }
