@@ -5,6 +5,90 @@
 #include <stdlib.h>
 #include <fstream>
 #include <iostream>
+#include <stdint.h>
+#include <set>
+#include <cstdlib>
+
+// definitions for things defined in kmer.cpp.
+
+struct haplotype_counts_t {
+    int hapA_count, hapB_count;
+};
+
+/**
+ * Convert a kmer in string form to a bunch of bits, where
+ * A=0, C=1, G=2, T=3. For example, ACCGT = 11 10 01 01 00 (little-endian)
+ */
+uint64_t kmer_to_bits(const std::string& kmer_string);
+
+/**
+ * Given a bit representation of a string created by the
+ * kmer_to_bits function, convert it back to a string.
+ *
+ * Arguments:
+ * uint64_t bit_repr -- the bit representation of a k-mer
+ * size_t k -- the length of the k-mer
+ *
+ * Returns: std::string of length k containing the k-mer
+ */
+std::string bits_to_kmer(uint64_t bit_repr, size_t k);
+
+/**
+ * Given a DNA sequence, returns the reverse complement.
+ */
+std::string reverse_complement(std::string sequence);
+
+/**
+ * Given a k-mer string, finds the reverse complement, and
+ * then returns whichever appears first in alphabetical
+ * order, the k-mer or its reverse complement.
+ */
+std::string get_canonical_representation(std::string sequence);
+
+/**
+ * Figures out what size of k-mer is being used by taking
+ * a peek at the first line of a file containing a list of
+ * unique k-mers.
+ */
+size_t get_kmer_size(char* file_path);
+
+/**
+ * Given a read sequence and two sets of k-mers, counts the
+ * number of k-mers from each set that appears in the read
+ * and returns a haplotype_counts_t containing these counts.
+ *
+ * Arguments:
+ * std::string read -- the sequence of a read
+ * std::set<uint64_t>& hapA_kmers
+ *     -- a set of bit representations of k-mers in haplotype A
+ * std::set<uint64_t>& hapB_kmers -- same, but for haplotype B
+ * size_t k -- k-mer size
+ *
+ * Returns: haplotype_counts_t instance where
+ *          counts.hapA_count is the number of k-mers from
+ *          haplotype A that appear in the read and
+ *          counts.hapB_count is the number of k-mers from
+ *          haplotype B that appear in the read.
+ */
+haplotype_counts_t count_kmers_in_read(std::string read,
+        std::set<uint64_t>& hapA_kmers, std::set<uint64_t>& hapB_kmers,
+        size_t k);
+
+/**
+ * Reads a file containing a list of k-mers, one per line,
+ * into a set in which the k-mers are stored in bit
+ * representations.
+ *
+ * Arguments:
+ * char* file_path
+ *     -- path to a file containing a list of k-mers, one
+ *        per line
+ *
+ * Returns: std::set<uint64_t>, a set of 64-bit
+ *          representations of the k-mers in the given file
+ *
+ */
+std::set<uint64_t> read_kmers_into_set(char* file_path);
 
 /**
  * Struct for a single entry of a sequence file, containing

@@ -1,176 +1,163 @@
 #include <set>
 #include <stdint.h>
+#include <getopt.h>
 #include <cstdlib>
 #include "trio_binning.h"
 
-struct haplotype_counts_t {
-    int hapA_count, hapB_count;
+void print_usage_message()
+{
+    std::cerr <<
+        "--hapA-kmers <a_kmers>:     file of hapA-unique kmers\n"
+        "--hapB-kmers <b_kmers>:     file of hapB-unique kmers\n"
+        "--input-reads <reads_file>: fasta/q containing reads to classify\n"
+        "--hapA-out <a_out>:         output file for hapA reads\n"
+        "--hapB-out <b_out>:         output file for hapB reads\n"
+        "--hapU-out <u_out>:         output file for unknown hap reads\n"
+        "--help:                     print this message\n";
+    exit(1);
+}
+
+struct options {
+    options() : hapA_kmer_filepath((char *) ""),
+                hapB_kmer_filepath((char *) ""),
+                reads_inpath((char *) ""), hapA_reads_outpath((char *) ""),
+                hapB_reads_outpath((char *) ""),
+                hapU_reads_outpath((char *) "") {}
+
+    char* hapA_kmer_filepath;
+    char* hapB_kmer_filepath;
+    char* reads_inpath;
+    char* hapA_reads_outpath;
+    char* hapB_reads_outpath;
+    char* hapU_reads_outpath;
 };
 
-/**
- * Convert a kmer in string form to a bunch of bits, where
- * A=0, C=1, G=2, T=3.
- */
-uint64_t kmer_to_bits(const std::string& kmer_string)
+options process_args(int argc, char** argv)
 {
-    unsigned char i;
-    uint64_t two_bits;
-    uint64_t bit_repr = 0;
-    for (i = 0; i < kmer_string.length(); i++)
+    options opts;
+    int opt;
+
+    const char* const short_opts = "a:b:i:s:t:u:h";
+    const option long_opts[] = {
+        {"hapA-kmers", required_argument, 0, 'a'},
+        {"hapB-kmers", required_argument, 0, 'b'},
+        {"input-reads", required_argument, 0, 'i'},
+        {"hapA-out", required_argument, 0, 's'},
+        {"hapB-out", required_argument, 0, 't'},
+        {"hapU-out", required_argument, 0, 'u'},
+        {"help", no_argument, 0, 'h'},
+        {0, 0, 0, 0}
+    };
+
+    while ((opt = getopt_long(argc, argv, short_opts, long_opts, NULL)) != -1)
     {
-        switch(kmer_string[i]) {
-            case 'A': two_bits = 0; break;
-            case 'C': two_bits = 1; break;
-            case 'G': two_bits = 2; break;
-            case 'T': two_bits = 3; break;
-        }
-
-        bit_repr |= two_bits << (2*i);
-    }
-
-    return bit_repr;
-}
-
-std::string bits_to_kmer(uint64_t bit_repr, size_t k)
-{
-    uint64_t two_bits;
-    char base;
-    std::string kmer (k, 'N');
-    uint64_t mask = 3;
-
-    int i;
-    for (i=0; i<k; i++) {
-        switch((bit_repr & (mask<<(2*i))) >>(2*i) )
+        switch (opt)
         {
-            case 0: base = 'A'; break;
-            case 1: base = 'C'; break;
-            case 2: base = 'G'; break;
-            case 3: base = 'T'; break;
-        }
-
-        kmer[i] = base;
-    }
-
-    return kmer;
-}
-
-std::string reverse_complement(std::string sequence) {
-    std::string revcomp_seq  (sequence.length(), '*');
-    int i;
-    char base;
-
-    for (i = 0; i < sequence.length(); i++) {
-        switch (sequence[i]) {
-            case 'A': base = 'T'; break;
-            case 'C': base = 'G'; break;
-            case 'G': base = 'C'; break;
-            case 'T': base = 'A'; break;
-        }
-        revcomp_seq[sequence.length() - 1 - i] = base;
-    }
-
-    return revcomp_seq;
-}
-
-std::string get_canonical_representation(std::string sequence) {
-    std::string revcomp_seq = reverse_complement(sequence);
-    if (sequence.compare(revcomp_seq) < 0) {
-        return sequence;
-    } else {
-        return revcomp_seq;
-    }
-}
-
-size_t get_kmer_size(char* file_path)
-{
-    std::ifstream infile;
-    std::string kmer;
-
-    infile.open(file_path);
-    if (!infile) {
-        std::cerr << "Can't open " << file_path;
-        exit(1);
-    }
-
-    infile >> kmer;
-    infile.close();
-    return kmer.length();
-}
-
-haplotype_counts_t count_kmers_in_read(std::string read,
-        std::set<uint64_t>& hapA_kmers, std::set<uint64_t>& hapB_kmers,
-        size_t k)
-{
-    int i;
-    std::string kmer;
-    haplotype_counts_t counts;
-    counts.hapA_count = 0; counts.hapB_count = 0;
-
-    for (i=0; i < read.length()-k+1; i++) {
-        kmer = read.substr(i, k);
-        kmer = get_canonical_representation(kmer);
-        if (hapA_kmers.find(kmer_to_bits(kmer)) != hapA_kmers.end()) {
-            counts.hapA_count++;
-        }
-
-        if (hapB_kmers.find(kmer_to_bits(kmer)) != hapB_kmers.end()) {
-            counts.hapB_count++;
+            case 'a':
+                opts.hapA_kmer_filepath = optarg;
+                break;
+            case 'b':
+                opts.hapB_kmer_filepath = optarg;
+                break;
+            case 'i':
+                opts.reads_inpath = optarg;
+                break;
+            case 's':
+                opts.hapA_reads_outpath = optarg;
+                break;
+            case 't':
+                opts.hapB_reads_outpath = optarg;
+                break;
+            case 'u':
+                opts.hapU_reads_outpath = optarg;
+                break;
+            case 'h':
+                print_usage_message();
+                break;
+            case ':':
+                std::cerr << "option " << optopt << " requires argument.\n";
+            case '?':
+            default:
+                std::cerr << "option " << optopt << " is invalid. Ignoring.\n";
         }
     }
 
-    return counts;
-}
-
-std::set<uint64_t> read_kmers_into_set(char* file_path)
-{
-    std::set<uint64_t> kmers;
-    std::string kmer;
-    std::ifstream infile;
-
-    infile.open(file_path);
-    if (!infile) {
-        std::cerr << "Can't open " << file_path;
-        exit(1);
+    // make sure all required options have been filled
+    if (opts.hapA_kmer_filepath[0] == '\0')
+    {
+        std::cerr << "Must specify -a option.\n";
+        print_usage_message();
     }
 
-    while (infile >> kmer) {
-        kmers.insert(kmer_to_bits(kmer));
+    else if (opts.hapB_kmer_filepath[0] == '\0')
+    {
+        std::cerr << "Must specify -b option.\n";
+        print_usage_message();
     }
-    infile.close();
 
-    return kmers;
+    else if (opts.reads_inpath[0] == '\0')
+    {
+        std::cerr << "Must specify -i option.\n";
+        print_usage_message();
+    }
+
+    else if (opts.hapA_reads_outpath[0] == '\0')
+    {
+        std::cerr << "Must specify -s option.\n";
+        print_usage_message();
+    }
+
+    else if (opts.hapB_reads_outpath[0] == '\0')
+    {
+        std::cerr << "Must specify -t option.\n";
+        print_usage_message();
+    }
+
+    else if (opts.hapU_reads_outpath[0] == '\0')
+    {
+        std::cerr << "Must specify -u option.\n";
+        print_usage_message();
+    }
+
+    return opts;
 }
 
 int main(int argc, char** argv)
 {
+    options opts; // struct to hold command-line arguments
+
+    // sets of hapA or hapB specific k-mers, encoded as 64-bit ints
     std::set<uint64_t> hapA_kmers, hapB_kmers;
+
+    // an iterator for above sets
     std::set<uint64_t>::iterator it;
+
+    // output streams for haplotype-specific reads (A and B) and reads which
+    // cannot be assigned to a haplotype (U)
     std::ofstream hapA_reads_out, hapB_reads_out, hapU_reads_out;
+
+    // counts of number of k-mers unique to each haplotype
     unsigned int num_hapA_kmers, num_hapB_kmers, max_num_kmers;
+
+    // scaling factors for scores, to account for the difference in size
+    // between the two sets of k-mers
     double scaling_factor_A, scaling_factor_B;
+
+    // scores for both haplotypes for a read
     float hapA_score, hapB_score;
     char best_haplotype;
 
     // get arguments
-    if (argc < 7) {
-        std::cerr << "Not enough arguments.\n";
-        exit(1);
-    }
-    char* hapA_kmer_filepath = argv[1];
-    char* hapB_kmer_filepath = argv[2];
-    char* reads_inpath = argv[3];
-    char* hapA_reads_outpath = argv[4];
-    char* hapB_reads_outpath = argv[5];
-    char* hapU_reads_outpath = argv[6];
+    opts = process_args(argc, argv);
 
-    size_t k = get_kmer_size(argv[1]);
+    size_t k = get_kmer_size(opts.hapA_kmer_filepath);
     uint8_t *seq;
 
     int i;
 
     // read k-kmers into sets
-    hapA_kmers = read_kmers_into_set(hapA_kmer_filepath);
-    hapB_kmers = read_kmers_into_set(hapB_kmer_filepath);
+    hapA_kmers = read_kmers_into_set(opts.hapA_kmer_filepath);
+    hapB_kmers = read_kmers_into_set(opts.hapB_kmer_filepath);
 
     // look at the sizes of the k-mer sets and use these to calculating scaling
     // factors. The original program divides read haplotype counts by the size
@@ -185,13 +172,13 @@ int main(int argc, char** argv)
     scaling_factor_B = (double) max_num_kmers / (double) num_hapB_kmers;
 
     // set up some output streams for haplotype reads
-    hapA_reads_out.open(hapA_reads_outpath, std::ofstream::out);
-    hapB_reads_out.open(hapB_reads_outpath, std::ofstream::out);
-    hapU_reads_out.open(hapU_reads_outpath, std::ofstream::out);
+    hapA_reads_out.open(opts.hapA_reads_outpath, std::ofstream::out);
+    hapB_reads_out.open(opts.hapB_reads_outpath, std::ofstream::out);
+    hapU_reads_out.open(opts.hapU_reads_outpath, std::ofstream::out);
 
     // go through reads
     // TODO add gzip support and automatic fasta/fastq detection
-    FastqParser reads_parser(reads_inpath);
+    FastqParser reads_parser(opts.reads_inpath);
     SeqEntry entry;
     haplotype_counts_t counts;
 
