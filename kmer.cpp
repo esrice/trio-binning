@@ -101,15 +101,20 @@ haplotype_counts_t count_kmers_in_read(std::string read,
     haplotype_counts_t counts;
     counts.hapA_count = 0; counts.hapB_count = 0;
 
-    for (i=0; i < read.length()-k+1; i++) {
-        kmer = read.substr(i, k);
-        kmer = get_canonical_representation(kmer);
-        if (hapA_kmers.find(kmer_to_bits(kmer)) != hapA_kmers.end()) {
-            counts.hapA_count++;
-        }
+    /* this check is necessary because length() returns a size_t, which is
+       unsigned and therefore if k < read.length(), read.length()-k causes
+       an overflow. */
+    if (read.length() >= k) {
+        for (i=0; i < read.length()-k+1; i++) {
+            kmer = read.substr(i, k);
+            kmer = get_canonical_representation(kmer);
+            if (hapA_kmers.find(kmer_to_bits(kmer)) != hapA_kmers.end()) {
+                counts.hapA_count++;
+            }
 
-        if (hapB_kmers.find(kmer_to_bits(kmer)) != hapB_kmers.end()) {
-            counts.hapB_count++;
+            if (hapB_kmers.find(kmer_to_bits(kmer)) != hapB_kmers.end()) {
+                counts.hapB_count++;
+            }
         }
     }
 
