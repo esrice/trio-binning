@@ -186,7 +186,9 @@ int main(int argc, char** argv)
     int i;
 
     // read k-kmers into sets
+    std::cerr << "Reading haplotype A kmers into a set...\n";
     hapA_kmers = read_kmers_into_set(opts.hapA_kmer_filepath);
+    std::cerr << "Reading haplotype B kmers into a set...\n";
     hapB_kmers = read_kmers_into_set(opts.hapB_kmer_filepath);
 
     // look at the sizes of the k-mer sets and use these to calculating scaling
@@ -216,6 +218,7 @@ int main(int argc, char** argv)
     SeqEntry r1_entry, r2_entry;
     haplotype_counts_t r1_counts, r2_counts;
 
+    std::cerr << "Classifying reads...\n";
     while (!r1_parser.done) {
         // TODO catch errors caused by r1 and r2 having different # of reads
         r1_entry = r1_parser.next_sequence();
