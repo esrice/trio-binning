@@ -1,4 +1,5 @@
 #include "trio_binning.h"
+
 /**
  * This file contains functions for reading sequence files
  * like fasta and fastq. See main() for usage examples.
@@ -32,13 +33,26 @@ std::ostream& operator<< (std::ostream& stream, const SeqEntry& entry) {
  * an empty file.
  */
 SeqParser::SeqParser (const char* infile_path) : done(false) {
-    infile.open(infile_path);
-    if (!infile) {
+    std::string infile_str(infile_path);
+    if (infile_str.substr(infile_str.length() - 3, 3) == ".gz") {
+        std::cerr << "opening gz file..\n";
+        igz.open(infile_path);
+        infile_p = &igz;
+    } else {
+        std::cerr << "opening uncompressed file..\n";
+        ifs.open(infile_path);
+        infile_p = &ifs;
+    }
+
+    if (! *infile_p) {
         std::cerr << "Can't open " << infile_path << "\n";
         exit(1);
     }
-    if(!getline(infile, line)) {
+
+    std::getline(*infile_p, line);
+    if(infile_p->eof()) {
         std::cerr << "File " << infile_path << " is empty.\n";
+        exit(1);
     }
 }
 
@@ -49,12 +63,12 @@ SeqEntry FastaParser::next_sequence() {
     id = get_id(header);
     read = "";
 
-    for (std::getline(infile, line); line[0] != '>' && !infile.eof();
-            std::getline(infile, line)) {
+    for (std::getline(*infile_p, line); line[0] != '>' && !infile_p->eof();
+            std::getline(*infile_p, line)) {
         read += line;
     }
 
-    if (infile.eof()) {
+    if (infile_p->eof()) {
         done = true;
     }
     entry.id = id;
@@ -68,12 +82,12 @@ SeqEntry FastqParser::next_sequence() {
     header = line.substr(1, line.length() - 1);
     id = get_id(header);
 
-    std::getline(infile, read); // get the read sequence
-    std::getline(infile, line); // get the quality header line
-    std::getline(infile, qual); // get the quality string
+    std::getline(*infile_p, read); // get the read sequence
+    std::getline(*infile_p, line); // get the quality header line
+    std::getline(*infile_p, qual); // get the quality string
 
-    std::getline(infile, line); // advance to the next entry
-    if (infile.eof()) {
+    std::getline(*infile_p, line); // advance to the next entry
+    if (infile_p->eof()) {
         done = true;
     }
 

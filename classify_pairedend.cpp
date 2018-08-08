@@ -201,6 +201,8 @@ int main(int argc, char** argv)
     scaling_factor_A = (double) max_num_kmers / (double) num_hapA_kmers;
     scaling_factor_B = (double) max_num_kmers / (double) num_hapB_kmers;
 
+    /* TODO figure out an elegant way to use polymorphism to allow writing to
+       uncompressed or gzipped file depending on extension */
     // set up some output streams for haplotype reads
     hapA_r1_out.open(opts.hapA_r1_outpath, std::ofstream::out);
     hapA_r2_out.open(opts.hapA_r2_outpath, std::ofstream::out);
@@ -210,7 +212,6 @@ int main(int argc, char** argv)
     hapU_r2_out.open(opts.hapU_r2_outpath, std::ofstream::out);
 
     // go through reads
-    // TODO add gzip support
     FastqParser r1_parser(opts.forward_inpath), r2_parser(opts.forward_inpath);
     SeqEntry r1_entry, r2_entry;
     haplotype_counts_t r1_counts, r2_counts;

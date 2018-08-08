@@ -1,17 +1,18 @@
-CC=g++
-CFLAGS=-I.
+CXX=g++
+CXXFLAGS=-I.
+LDLIBS = -lgzstream -lz
 DEPS = trio_binning.h
 
 all: classify_longreads classify_pairedend
 
 %.o: %.cpp $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CXX) -c -o $@ $< $(CXXFLAGS) $(LDLIBS)
 
 classify_longreads: classify_longreads.o kmer.o seq.o
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDLIBS)
 
 classify_pairedend: classify_pairedend.o kmer.o seq.o
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDLIBS)
 
 .PHONY: clean
 

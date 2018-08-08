@@ -8,8 +8,12 @@
 #include <stdint.h>
 #include <set>
 #include <cstdlib>
+#include <zlib.h>
+#include <gzstream.h>
 
-// definitions for things defined in kmer.cpp.
+//---------------------------------------------//
+// definitions for things defined in kmer.cpp. //
+//---------------------------------------------//
 
 struct haplotype_counts_t {
     int hapA_count, hapB_count;
@@ -90,6 +94,10 @@ haplotype_counts_t count_kmers_in_read(std::string read,
  */
 std::set<uint64_t> read_kmers_into_set(char* file_path);
 
+//-----------------------------------//
+// definitions for things in seq.cpp //
+//-----------------------------------//
+
 /**
  * Struct for a single entry of a sequence file, containing
  * an entry id and a read.
@@ -123,7 +131,14 @@ class SeqParser {
         bool done; // have we reached EOF?
         virtual SeqEntry next_sequence() = 0;
     protected:
-        std::ifstream infile;
+        /* this is a pointer because our input stream could either be an
+           ifstream or an igzstream */
+        std::istream* infile_p;
+
+        // we will use *either* ifs or igz depending on whether file is gzipped
+        std::ifstream ifs;
+        igzstream igz;
+
         std::string line, header, id, read;
         SeqParser (const char*);
 };
