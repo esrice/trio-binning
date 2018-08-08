@@ -160,10 +160,10 @@ int main(int argc, char** argv)
     // an iterator for above sets
     std::set<uint64_t>::iterator it;
 
-    // output streams for haplotype-specific reads (A and B) and reads which
-    // cannot be assigned to a haplotype (U)
-    std::ofstream hapA_r1_out, hapA_r2_out, hapB_r1_out, hapB_r2_out;
-    std::ofstream hapU_r1_out, hapU_r2_out;
+    // output stream smart pointers for haplotype-specific reads (A and B) and
+    // reads which cannot be assigned to a haplotype (U)
+    std::unique_ptr<std::ostream> hapA_r1_out_p, hapA_r2_out_p,
+        hapB_r1_out_p, hapB_r2_out_p, hapU_r1_out_p, hapU_r2_out_p;
 
     // counts of number of k-mers unique to each haplotype
     unsigned int num_hapA_kmers, num_hapB_kmers, max_num_kmers;
@@ -203,15 +203,13 @@ int main(int argc, char** argv)
     scaling_factor_A = (double) max_num_kmers / (double) num_hapA_kmers;
     scaling_factor_B = (double) max_num_kmers / (double) num_hapB_kmers;
 
-    /* TODO figure out an elegant way to use polymorphism to allow writing to
-       uncompressed or gzipped file depending on extension */
-    // set up some output streams for haplotype reads
-    hapA_r1_out.open(opts.hapA_r1_outpath, std::ofstream::out);
-    hapA_r2_out.open(opts.hapA_r2_outpath, std::ofstream::out);
-    hapB_r1_out.open(opts.hapB_r1_outpath, std::ofstream::out);
-    hapB_r2_out.open(opts.hapB_r2_outpath, std::ofstream::out);
-    hapU_r1_out.open(opts.hapU_r1_outpath, std::ofstream::out);
-    hapU_r2_out.open(opts.hapU_r2_outpath, std::ofstream::out);
+    // set up some output stream pointers for haplotype reads
+    hapA_r1_out_p = ostream_gz_or_uncompressed(opts.hapA_r1_outpath);
+    hapA_r2_out_p = ostream_gz_or_uncompressed(opts.hapA_r2_outpath);
+    hapB_r1_out_p = ostream_gz_or_uncompressed(opts.hapB_r1_outpath);
+    hapB_r2_out_p = ostream_gz_or_uncompressed(opts.hapB_r2_outpath);
+    hapU_r1_out_p = ostream_gz_or_uncompressed(opts.hapU_r1_outpath);
+    hapU_r2_out_p = ostream_gz_or_uncompressed(opts.hapU_r2_outpath);
 
     // go through reads
     FastqParser r1_parser(opts.forward_inpath), r2_parser(opts.forward_inpath);
@@ -236,16 +234,16 @@ int main(int argc, char** argv)
 
         if (hapA_score > hapB_score) {
             best_haplotype = 'A';
-            hapA_r1_out << r1_entry;
-            hapA_r2_out << r2_entry;
+            *hapA_r1_out_p << r1_entry;
+            *hapA_r2_out_p << r2_entry;
         } else if (hapB_score > hapA_score) {
             best_haplotype = 'B';
-            hapB_r1_out << r1_entry;
-            hapB_r2_out << r2_entry;
+            *hapB_r1_out_p << r1_entry;
+            *hapB_r2_out_p << r2_entry;
         } else {
             best_haplotype = '-';
-            hapU_r1_out << r1_entry;
-            hapU_r2_out << r2_entry;
+            *hapU_r1_out_p << r1_entry;
+            *hapU_r2_out_p << r2_entry;
         }
 
         printf("%s\t%c\t%.2f\t%.2f\n", r1_entry.id.c_str(), best_haplotype,

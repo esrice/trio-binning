@@ -6,6 +6,26 @@
  */
 
 /*
+ *
+ */
+std::unique_ptr<std::ostream> ostream_gz_or_uncompressed(char* filepath)
+{
+    /* outstream_p points to either a std::ofstream or an ogzstream, depending
+       on the extension of filepath. */
+    std::unique_ptr<std::ostream> outstream_p;
+   
+    std::string filepath_str(filepath);
+    if (filepath_str.substr(filepath_str.length() - 3, 3) == ".gz") {
+        outstream_p = std::unique_ptr<std::ostream>(new ogzstream(filepath));
+    } else {
+        outstream_p = std::unique_ptr<std::ostream>
+            (new std::ofstream(filepath));
+    }
+
+    return outstream_p;
+}
+
+/*
  * Given a sequence header string, return the sequence id,
  * i.e., everything before the first space.
  */

@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-I.
+CXXFLAGS= -I. -std=c++11
 LDLIBS = -lgzstream -lz
 DEPS = trio_binning.h
 

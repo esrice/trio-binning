@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <set>
 #include <cstdlib>
+#include <memory>
 #include <zlib.h>
 #include <gzstream.h>
 
@@ -98,10 +99,24 @@ std::set<uint64_t> read_kmers_into_set(char* file_path);
 // definitions for things in seq.cpp //
 //-----------------------------------//
 
+/*
+ * Opens an output stream that is either gzip-compressed or
+ * uncompressed, depending on the extension.
+ *
+ * Argument: char* filepath -- path to file to write
+ * Returns: std::unique_ptr<std::ostream>, a smart pointer
+ *          to an ostream into that file. To write to it,
+ *          just dereference, e.g.
+ *              *outstream_p << "text" '
+ *          Because it's a smart pointer, it will close
+ *          automatically once the program is done with it.
+ */
+std::unique_ptr<std::ostream> ostream_gz_or_uncompressed(char* filepath);
+
 /**
  * Struct for a single entry of a sequence file, containing
  * an entry id and a read.
- */ // TODO figure out how to do this with polymorphism instead of overloading
+ */ // TODO do this with polymorphism instead of overloading
 class SeqEntry {
     public:
         std::string id, read, qual;
