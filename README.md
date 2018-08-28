@@ -1,4 +1,4 @@
 # trio-binning
 scripts for trio binning
 
-These are old. Use [https://github.com/esrice/trio_binning]() instead.
+These are old. Use [https://github.com/esrice/trio_binning](https://github.com/esrice/trio_binning) instead.
